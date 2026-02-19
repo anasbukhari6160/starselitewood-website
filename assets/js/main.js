@@ -72,9 +72,10 @@
       const path = location.pathname.split('/').pop() || 'index.html';
       $$('.nav-links a').forEach(a => {
         const href = (a.getAttribute('href') || '').split('/').pop();
-        if (href === path) {
-          a.classList.add('active');
-        }
+        const isActive = href === path;
+        a.classList.toggle('active', isActive);
+        if (isActive) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
       });
     }
   };
@@ -141,11 +142,20 @@
       }
 
       const errEl = field.parentElement.querySelector('.field-error');
+      if (errEl) {
+        if (!errEl.id) {
+          const fieldKey = field.id || field.name || 'field';
+          errEl.id = `${fieldKey}-error`;
+        }
+        field.setAttribute('aria-describedby', errEl.id);
+      }
       if (error) {
         field.classList.add('error');
+        field.setAttribute('aria-invalid', 'true');
         if (errEl) { errEl.textContent = error; errEl.classList.add('visible'); }
       } else {
         field.classList.remove('error');
+        field.setAttribute('aria-invalid', 'false');
         if (errEl) { errEl.classList.remove('visible'); }
       }
       return !error;
@@ -165,16 +175,48 @@
     showSuccess(form, successEl) {
       form.style.display = 'none';
       if (successEl) successEl.classList.add('visible');
-      // Save to localStorage
-      try {
-        const key = form.id + '_submissions';
-        const existing = JSON.parse(localStorage.getItem(key) || '[]');
-        const data = {};
-        new FormData(form).forEach((v, k) => data[k] = v);
-        data._timestamp = new Date().toISOString();
-        existing.push(data);
-        localStorage.setItem(key, JSON.stringify(existing));
-      } catch(e) { /* silent */ }
+    },
+
+    showSubmitError(form, message) {
+      let errorEl = $('.form-submit-error', form);
+      if (!errorEl) {
+        errorEl = document.createElement('p');
+        errorEl.className = 'form-submit-error';
+        errorEl.setAttribute('role', 'alert');
+        errorEl.setAttribute('aria-live', 'polite');
+        errorEl.style.color = '#b91c1c';
+        errorEl.style.marginTop = '12px';
+        errorEl.style.fontSize = '0.9rem';
+        const submitRow = $('.form-submit-row', form);
+        if (submitRow) submitRow.appendChild(errorEl);
+      }
+      errorEl.textContent = message;
+    },
+
+    clearSubmitError(form) {
+      const errorEl = $('.form-submit-error', form);
+      if (errorEl) errorEl.textContent = '';
+    },
+
+    async submitForm(form) {
+      const endpoint = form.dataset.endpoint || form.getAttribute('action') || window.STARS_ELITE_FORM_ENDPOINT;
+      if (!endpoint) {
+        throw new Error('No form endpoint configured');
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: new FormData(form)
+      });
+
+      let payload = null;
+      try { payload = await response.json(); } catch (e) { /* ignore json parse errors */ }
+
+      if (!response.ok) {
+        const err = payload && payload.message ? payload.message : 'Submission failed';
+        throw new Error(err);
+      }
     },
 
     initQuoteForm() {
@@ -190,21 +232,26 @@
       });
 
       let submitting = false;
-      form.addEventListener('submit', e => {
+      form.addEventListener('submit', async e => {
         e.preventDefault();
         if (submitting) return;
         if (!this.validateAll(form)) return;
+        this.clearSubmitError(form);
 
         submitting = true;
         const btn = $('[type="submit"]', form);
         if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
 
-        // Simulate async
-        setTimeout(() => {
+        try {
+          await this.submitForm(form);
           const successEl = $('#quoteSuccess');
           this.showSuccess(form, successEl);
+        } catch (err) {
+          this.showSubmitError(form, 'Unable to send right now. Please call +971-55-7891658 or email starselite.wood@gmail.com.');
+        } finally {
           submitting = false;
-        }, 1200);
+          if (btn) { btn.disabled = false; btn.textContent = 'Send Quote Request'; }
+        }
       });
     },
 
@@ -220,20 +267,26 @@
       });
 
       let submitting = false;
-      form.addEventListener('submit', e => {
+      form.addEventListener('submit', async e => {
         e.preventDefault();
         if (submitting) return;
         if (!this.validateAll(form)) return;
+        this.clearSubmitError(form);
 
         submitting = true;
         const btn = $('[type="submit"]', form);
         if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
 
-        setTimeout(() => {
+        try {
+          await this.submitForm(form);
           const successEl = $('#contactSuccess');
           this.showSuccess(form, successEl);
+        } catch (err) {
+          this.showSubmitError(form, 'Unable to send right now. Please call +971-55-7891658 or email starselite.wood@gmail.com.');
+        } finally {
           submitting = false;
-        }, 1200);
+          if (btn) { btn.disabled = false; btn.textContent = 'Send Message'; }
+        }
       });
     }
   };
@@ -269,10 +322,10 @@
     initProductQuoteLinks() {
       // Product "Request Quote" links populate the quote form's product field
       $$('[data-product]').forEach(btn => {
-        btn.addEventListener('click', e => {
+        btn.addEventListener('click', () => {
           const product = btn.dataset.product;
           // Store in sessionStorage and navigate
-          try { sessionStorage.setItem('quoteProduct', product); } catch(e) {}
+          try { sessionStorage.setItem('quoteProduct', product); } catch (error) { /* ignore storage errors */ }
         });
       });
 
@@ -290,7 +343,7 @@
             });
             sessionStorage.removeItem('quoteProduct');
           }
-        } catch(e) {}
+        } catch (error) { /* ignore storage errors */ }
       }
     }
   };
