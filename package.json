@@ -1,0 +1,22 @@
+{
+  "name": "starselite-wood-industry",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Stars Elite Wood Industry LLC static website",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint:js": "eslint \"assets/js/**/*.js\"",
+    "lint:format": "prettier --check \"**/*.{html,css,js,json,md,toml,xml,txt}\"",
+    "lint": "npm run lint:js && npm run lint:format",
+    "format": "prettier --write \"**/*.{html,css,js,json,md,toml,xml,txt}\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "eslint": "^9.20.0",
+    "globals": "^15.15.0",
+    "prettier": "^3.5.2",
+    "vite": "^6.1.0"
+  }
+}
