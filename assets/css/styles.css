@@ -2260,8 +2260,15 @@ textarea.form-control {
   .footer-bottom {
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     text-align: center;
     padding: 20px 0 28px;
+    gap: 16px;
+  }
+  .footer-bottom-links {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
   }
 }
 
@@ -2514,6 +2521,27 @@ textarea.form-control {
 
   /* About stats – 2x2 */
   .about-stats { grid-template-columns: 1fr 1fr; }
+
+  /* Footer – mobile alignment (all pages) */
+  .footer .footer-grid {
+    text-align: left;
+    align-items: stretch;
+  }
+  .footer-brand,
+  .footer-col {
+    max-width: 100%;
+  }
+  .footer-social {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .footer-bottom-links {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 }
 
 @media (max-width: 480px) {
