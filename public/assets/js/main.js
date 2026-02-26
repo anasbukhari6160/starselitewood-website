@@ -136,14 +136,16 @@
       }
     },
 
+    // Auto highlight active nav link (works for index.html, trailing /, and all pages)
     setActiveLink() {
-      const path = location.pathname.split('/').pop() || 'index.html';
-      $$('.nav-links a').forEach(a => {
-        const href = (a.getAttribute('href') || '').split('/').pop();
-        const isActive = href === path || (path === '' && href === 'index.html');
-        a.classList.toggle('active', isActive);
-        if (isActive) a.setAttribute('aria-current', 'page');
-        else a.removeAttribute('aria-current');
+      const currentPage = (location.pathname.split('/').pop() || 'index.html').split('?')[0].split('#')[0] || 'index.html';
+      $$('.nav-links a').forEach(link => {
+        const linkHref = (link.getAttribute('href') || '').split('?')[0].split('#')[0];
+        const linkPage = linkHref.split('/').pop() || 'index.html';
+        const isActive = linkPage === currentPage;
+        link.classList.toggle('active', isActive);
+        if (isActive) link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
       });
     }
   };
